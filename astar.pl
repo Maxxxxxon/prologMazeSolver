@@ -1,13 +1,13 @@
 :- ensure_loaded(utils).
 
-covid([2, 6]).
-covid([4, 2]).
+covid([1, 4]).
+covid([2, 4]).
 
 doctor([5, 1]).
-home([9, 9]).
-mask([1, 4]).
+home([4, 4]).
+mask([5, 4]).
 
-size([5, 4]).
+restrictions(4).
 
 adjacent_cells(Cell1, Cell2) :-
     Cell2 = [X2, Y2],
@@ -34,16 +34,16 @@ is_covid_safe(Cell, CompletedPath):-
     ).
 
 initialize_cost_and_parent(FirstValue, CostList, ParentList) :-
-    size([X, Y]),
-    FirstValue =:= X * Y,
+    restrictions(L),
+    FirstValue =:= L * L,
     CostList = [],
     ParentList = [],
     !.
 
 initialize_cost_and_parent(FirstValue, CostList, ParentList) :-
-    size([XMax, YMax]),
-    X is FirstValue mod XMax + 1,
-    Y is FirstValue // XMax + 1,
+    restrictions(L),
+    X is FirstValue mod L + 1,
+    Y is FirstValue // L + 1,
     NextValue is FirstValue + 1,
     initialize_cost_and_parent(NextValue, CostNew, ParentNew),
     CostList = [[[X, Y], 999999] | CostNew],
@@ -68,11 +68,11 @@ updateListValue(Index, Value, OldList, NewList) :-
     delete(OldList, [Index, _], MiddleList),
     concatenate(MiddleList, [Index, Value], NewList).
 
-get_minimal_value(KeyList, [], [[10, 10], 999999]).
+get_minimal_value(_, [], [[10, 10], 999999]).
 get_minimal_value(KeyList, CostList, MinimalVertex):-
     CostList = [[Cell, Value]|Tail],
     get_minimal_value(KeyList, Tail, TailMinimalVertex),
-    TailMinimalVertex = [TailMinimalCell, TailMinimalValue],
+    TailMinimalVertex = [_, TailMinimalValue],
     ((
         member(Cell, KeyList),
         TailMinimalValue >= Value,
@@ -116,7 +116,7 @@ updateAdjacent(AdjacentVerteces, Cell, ListQ, ListQNew, ListU, ParentList, Paren
 
 astar(ListQ, ListU, CostList, ParentList, ParentListNew):-
     get_minimal_value(ListQ, CostList, Vertex),     % get the cell from Q which has the smallest value in costlist
-    Vertex = [Cell, Value],
+    Vertex = [Cell, _],
     (
         (
             home(Cell),
