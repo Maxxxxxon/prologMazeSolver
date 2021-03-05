@@ -5,11 +5,34 @@ covid([2, 4]).
 
 doctor([5, 1]).
 home([4, 4]).
-mask([5, 4]).
+mask([4, 4]).
+
+initial_position([1, 1, 0]).
 
 restrictions(4).
 
-adjacent_cells(Cell1, Cell2) :-
+adjacent_cells_actor(Cell1, Cell2) :-
+    Cell1 = [X1, Y1, Covid_level], 
+    (X2 is X1 + 1; X2 is X1; X2 is X1 - 1),
+    (Y2 is Y1 + 1; Y2 is Y1; Y2 is Y1 - 1),
+    restrictions(L),
+    X2 > 0, X2 =< L,
+    Y2 > 0, Y2 =< L, 
+    (
+        (
+            not((mask([X2, Y2]); doctor([X2, Y2]))),
+            Cell2 = [X2, Y2, Covid_level]
+        );
+        (
+            (mask([X2, Y2]); doctor([X2, Y2])),
+            Cell2 = [X2, Y2, 1]
+        )
+    ),
+    Cell1 \= Cell2 .
+
+
+
+adjacent_cells_covid(Cell1, Cell2) :-
     Cell2 = [X2, Y2],
     Cell1 = [X1, Y1],
     (X2 is X1 + 1; X2 is X1; X2 is X1 - 1),
@@ -18,19 +41,19 @@ adjacent_cells(Cell1, Cell2) :-
     X2 > 0, X2 =< L,
     Y2 > 0, Y2 =< L, 
     Cell1 \= Cell2.
-
 covidAdjacentD1(X) :-
     covid(Y),
-    adjacent_cells(Y, X).
+    adjacent_cells_covid(Y, X).
 
-is_covid_safe(Cell, CompletedPath):-
-    (   
-      (covid(Cell); covidAdjacentD1(Cell)),
-      (doctor(X), member(X, CompletedPath); mask(Y), member(Y, CompletedPath))
-    );
+allowed_move(Cell1, Cell2) :-
+    adjacent_cells_actor(Cell1, Cell2),
+    Cell2 = [X, Y, Covid_level],
     (
-        not(covid(Cell)), 
-        not(covidAdjacentD1(Cell))
+        (
+            covidAdjacentD1([X, Y]),
+            Covid_level = 1
+        );
+        not(covidAdjacentD1([X, Y]))
     ).
 
 initialize_cost_and_parent(FirstValue, CostList, ParentList) :-
@@ -46,11 +69,11 @@ initialize_cost_and_parent(FirstValue, CostList, ParentList) :-
     Y is FirstValue // L + 1,
     NextValue is FirstValue + 1,
     initialize_cost_and_parent(NextValue, CostNew, ParentNew),
-    CostList = [[[X, Y], 999999] | CostNew],
-    ParentList = [[[X, Y], [999999, 999999]] | ParentNew].
+    CostList = [[[X, Y, 0], 99], [[X, Y, 1], 99] | CostNew],
+    ParentList = [[[X, Y, 0], [99, 99]], [[X, Y, 1], [99, 99]] | ParentNew].
 
 heuristic(Cell, Ans) :- 
-    Cell = [X, Y],
+    Cell = [X, Y, _],
     home(Home),
     Home = [HomeX, HomeY],
     abs(HomeX - X, Xdif), abs(HomeY - Y, Ydif),
@@ -66,9 +89,9 @@ get_value_from_cell(Cell, Cost, Value) :-
 
 updateListValue(Index, Value, OldList, NewList) :-
     delete(OldList, [Index, _], MiddleList),
-    concatenate(MiddleList, [Index, Value], NewList).
+    concatenate(MiddleList, [[Index, Value]], NewList).
 
-get_minimal_value(_, [], [[10, 10], 999999]).
+get_minimal_value(_, [], [[10, 10, 0], 99]).
 get_minimal_value(KeyList, CostList, MinimalVertex):-
     CostList = [[Cell, Value]|Tail],
     get_minimal_value(KeyList, Tail, TailMinimalVertex),
@@ -119,13 +142,14 @@ astar(ListQ, ListU, CostList, ParentList, ParentListNew):-
     Vertex = [Cell, _],
     (
         (
-            home(Cell),
+            Cell = [X, Y, _],
+            home([X, Y]),
             ParentListNew = ParentList
         );
         (
             delete(ListQ, Cell, ListQ1),
             ListU1 = [Cell|ListU],
-            bagof(AdjCell, adjacent_cells(Cell, AdjCell), AdjacentCells),
+            bagof(AdjCell, allowed_move(Cell, AdjCell), AdjacentCells),
             updateAdjacent(AdjacentCells, Cell, ListQ1, ListQNew, ListU1, ParentList, ParentList1, CostList, CostList1),
             astar(ListQNew, ListU1, CostList1, ParentList1, ParentListNew)
         )
@@ -133,10 +157,11 @@ astar(ListQ, ListU, CostList, ParentList, ParentListNew):-
 
 computeParentList(ParentListNew) :-
     initialize_cost_and_parent(0, CostList, ParentList),
-    heuristic([1, 1], H),
-    substitute([[1, 1], _], [[1, 1], H], CostList, CostList2),
+    initial_position(InitialPosition),
+    heuristic(InitialPosition, Heuristic),
+    updateListValue(InitialPosition, Heuristic, CostList, CostList2),
 
-    astar([[1, 1]], [], CostList2, ParentList, ParentListNew).           %% list of Q -- to consider, list of U -- considered, Cost List - distance + heuristic
+    astar([InitialPosition], [], CostList2, ParentList, ParentListNew).           %% list of Q -- to consider, list of U -- considered, Cost List - distance + heuristic
 
 main(X) :-
     computeParentList(X).
