@@ -33,20 +33,21 @@ is_covid_safe(Cell, CompletedPath):-
         not(covidAdjacentD1(Cell))
     ).
 
-
-initialize_cost(FirstValue, Cost) :-
+initialize_cost_and_parent(FirstValue, CostList, ParentList) :-
     size([X, Y]),
     FirstValue =:= X * Y,
-    Cost = [],
+    CostList = [],
+    ParentList = [],
     !.
 
-initialize_cost(FirstValue, Cost) :-
+initialize_cost_and_parent(FirstValue, CostList, ParentList) :-
     size([XMax, YMax]),
     X is FirstValue mod XMax + 1,
     Y is FirstValue // XMax + 1,
     NextValue is FirstValue + 1,
-    initialize_cost(NextValue, CostNew),
-    Cost = [[[X, Y], 999999] | CostNew].
+    initialize_cost_and_parent(NextValue, CostNew, ParentNew),
+    CostList = [[[X, Y], 999999] | CostNew],
+    ParentList = [[[X, Y], [999999, 999999]] | ParentNew].
 
 heuristic(Cell, Ans) :- 
     Cell = [X, Y],
@@ -62,27 +63,46 @@ distance(Cell, Cost, Ans) :-
 
 get_value_from_cell(Cell, Cost, Value) :-
     nth0(_, Cost, [Cell, Value]).
-    
-% get_minimal_value(Value_list, Value):-
 
-updateAdjacent([], _, _, _, _, _, _).
-updateAdjacent(AdjacentVerteces, Cell, ListQ, ListU, ListQNew, ListUNew, ParentList, CostList) :-
+updateListValue(Index, Value, OldList, NewList) :-
+    delete(OldList, [Index, _], MiddleList),
+    concatenate(MiddleList, [Index, Value], NewList).
+
+get_minimal_value(KeyList, [], [[10, 10], 999999]).
+get_minimal_value(KeyList, CostList, MinimalVertex):-
+    CostList = [[Cell, Value]|Tail],
+    get_minimal_value(KeyList, Tail, TailMinimalVertex),
+    TailMinimalVertex = [TailMinimalCell, TailMinimalValue],
+    ((
+        member(Cell, KeyList),
+        TailMinimalValue >= Value,
+        MinimalVertex = [Cell, Value],
+        !
+    );
+    (
+        (not(member(Cell, KeyList)); TailMinimalValue < Value), 
+        MinimalVertex = TailMinimalVertex
+    )).
+
+
+updateAdjacent([], _, ListQ, ListQ, _, ParentList, ParentList, CostList, CostList).
+updateAdjacent(AdjacentVerteces, Cell, ListQ, ListQNew, ListU, ParentList, ParentListNew, CostList, CostListNew) :-
     AdjacentVerteces = [Vertex|Tail],
-    get_value_from_cell(Cell, CostList, CellValue),
-    Score is Value + 1,
+    distance(Cell, CostList, CellDistance),
+    Score is CellDistance + 1,
     ((
         member(Cell, ListU),
-        distance(Vertex, CostList, VertexValue),
-        Score >= VertexValue,
-        updateAdjacent(Tail, Cell, ListQ, ListU, ListQNew, ListUNew, CostList)
+        distance(Vertex, CostList, VertexDistance),
+        Score >= VertexDistance,
+        updateAdjacent(Tail, Cell, ListQ, ListQNew, ListU, ParentList, ParentListNew, CostList, CostListNew)
      );
      ( 
-        distance(Vertex, CostList, VertexValue),
-        (not(member(Cell, ListU)); Score < VertexValue),
-        setListValue(ParentList, Vertex, Cell),            %% list, index, value
+        distance(Vertex, CostList, VertexDistance),
+        (not(member(Cell, ListU)); Score < VertexDistance),
+        updateListValue(Vertex, Cell, ParentList, ParentList1),            % index, value, oldlist, newlist
         heuristic(Vertex, VertexHeuristic),
-        NewVertexCost is VertexValue + VertexHeuristic,
-        set_value_for_cell(Vertex, NewVertexCost, CostList, CostListNew),
+        NewVertexCost is Score + VertexHeuristic,
+        updateListValue(Vertex, NewVertexCost, CostList, CostList1),
         ((
             member(Vertex, ListQ),
             ListQ1 = ListQ
@@ -90,28 +110,33 @@ updateAdjacent(AdjacentVerteces, Cell, ListQ, ListU, ListQNew, ListUNew, ParentL
         (
             ListQ1 = [Vertex|ListQ]
         )),
-        updateAdjacent(Tail, Cell, ListQ1, ListU, ListQNew, ListUNew, ParentList, CostList)
+        updateAdjacent(Tail, Cell, ListQ1, ListQNew, ListU, ParentList1, ParentListNew, CostList1, CostListNew)
     )).
     
 
-astar(ListQ, ListU, Cost):-
-    get_minimal_value(ListQ, Vertex),
+astar(ListQ, ListU, CostList, ParentList, ParentListNew):-
+    get_minimal_value(ListQ, CostList, Vertex),     % get the cell from Q which has the smallest value in costlist
     Vertex = [Cell, Value],
     (
-        home(Cell);
         (
-            delete_value(ListQ, Vertex, ListQNew),
-            add_value(ListU, Vertex, ListUNew),
-            bagof(Vert, adjacent_cells(Cell, Vert), AdjacentVerteces),
-            updateAdjacent(AdjacentVerteces, Cell, ListQNew, ListUNew, ListQNew2, ListUNew2, Cost),
-            astar(ListQNew2, ListUNew2)
+            home(Cell),
+            ParentListNew = ParentList
+        );
+        (
+            delete(ListQ, Cell, ListQ1),
+            ListU1 = [Cell|ListU],
+            bagof(AdjCell, adjacent_cells(Cell, AdjCell), AdjacentCells),
+            updateAdjacent(AdjacentCells, Cell, ListQ1, ListQNew, ListU1, ParentList, ParentList1, CostList, CostList1),
+            astar(ListQNew, ListU1, CostList1, ParentList1, ParentListNew)
         )
     ).
 
-
-main(Path) :-
-    initialize_cost(0, Cost),
+computeParentList(ParentListNew) :-
+    initialize_cost_and_parent(0, CostList, ParentList),
     heuristic([1, 1], H),
-    substitute([[1, 1], _], [[1, 1], H], Cost, Cost2),
+    substitute([[1, 1], _], [[1, 1], H], CostList, CostList2),
 
-    astar([[1, 1]], [], Cost2).           %% list of Q -- to consider, list of U -- considered, Cost List - distance + heuristic
+    astar([[1, 1]], [], CostList2, ParentList, ParentListNew).           %% list of Q -- to consider, list of U -- considered, Cost List - distance + heuristic
+
+main(X) :-
+    computeParentList(X).
