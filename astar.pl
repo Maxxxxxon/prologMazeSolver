@@ -1,15 +1,15 @@
 :- ensure_loaded(utils).
 
-covid([1, 4]).
-covid([2, 4]).
+covid([7, 5]).
+covid([7, 2]).
 
-doctor([5, 1]).
-home([4, 4]).
-mask([4, 4]).
+doctor([1, 9]).
+home([9, 1]).
+mask([5, 5]).
 
 initial_position([1, 1, 0]).
 
-restrictions(4).
+restrictions(9).
 
 adjacent_cells_actor(Cell1, Cell2) :-
     Cell1 = [X1, Y1, Covid_level], 
