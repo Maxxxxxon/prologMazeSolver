@@ -1,12 +1,5 @@
 :-ensure_loaded(utils).
-
-covid([2, 5]).
-covid([4, 1]).
-
-doctor([6, 6]).
-home([4, 5]).
-mask([2, 1]).
-restrictions(5).
+:-ensure_loaded(input).
 
 adjacent_cells(Cell1, Cell2) :-
     Cell2 = [X2, Y2],
@@ -52,4 +45,9 @@ find_some_way(Path) :-
 find_shortest_way(Path) :-
     home(Home),
     bagof(PathP, path([1, 1], Home, [[1, 1]], PathP), L),
-    find_shortest_list(L, Path).
+    find_shortest_list(L, Path2),
+    concatenate([[1, 1]], Path2, Path).
+
+main :-
+    find_shortest_way(Path),
+    write(Path).

@@ -1,15 +1,7 @@
 :- ensure_loaded(utils).
-
-covid([7, 5]).
-covid([7, 2]).
-
-doctor([1, 9]).
-home([9, 1]).
-mask([5, 5]).
-
+:- ensure_loaded(input).
 initial_position([1, 1, 0]).
 
-restrictions(9).
 
 adjacent_cells_actor(Cell1, Cell2) :-
     Cell1 = [X1, Y1, Covid_level], 
@@ -165,8 +157,7 @@ computeParentList(ParentListNew) :-
 
 recursiveRestorePath(Cell, _, Path) :-
     initial_position(Cell),
-    Cell = [X, Y, _],
-    Path = [[X, Y]].
+    Path = [].
 
 recursiveRestorePath(Cell, ParentList, Path) :-
     get_value_from_cell(Cell, ParentList, ParentCell),
@@ -185,7 +176,7 @@ restorePath(ParentList, Path) :-
         N1 < N2,
         Path = Covid1Path1;
         N1 >= N2,
-        Path = Covid1Path1
+        Path = Covid0Path1
     ).
 
 main :-
