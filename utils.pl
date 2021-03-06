@@ -1,15 +1,14 @@
-concatenate([], L, L).
-concatenate([X|L1], L2, [X|L3]) :-   %%% rewrite
-  concatenate(L1, L2, L3).
+concatenate([], List, List).
+concatenate([X|List1], List2, [X|List3]) :- 
+  concatenate(List1, List2, List3).
 
 max(A, B, X):-
-    (A > B, X is A);
-    (A =< B, X is B).
+  (A > B, X is A);
+  (A =< B, X is B).
 
-
-substitute(Value, NewValue, List, NewList):-
-    delete(List, Value, List2),
-    concatenate(List2, [NewValue], List).
+min(A, B, X):-
+  (A < B, X is A);
+  (A >= B, X is B).
 
 shortestListOfTwo([List1, List2], List):-
   length(List1, L1),
