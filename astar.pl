@@ -163,5 +163,32 @@ computeParentList(ParentListNew) :-
 
     astar([InitialPosition], [], CostList2, ParentList, ParentListNew).           %% list of Q -- to consider, list of U -- considered, Cost List - distance + heuristic
 
-main(X) :-
-    computeParentList(X).
+recursiveRestorePath(Cell, _, Path) :-
+    initial_position(Cell),
+    Cell = [X, Y, _],
+    Path = [[X, Y]].
+
+recursiveRestorePath(Cell, ParentList, Path) :-
+    get_value_from_cell(Cell, ParentList, ParentCell),
+    ParentCell = [X, Y, _],
+    recursiveRestorePath(ParentCell, ParentList, Path1),
+    concatenate(Path1, [[X, Y]], Path).
+
+restorePath(ParentList, Path) :-
+    home([X, Y]),
+    recursiveRestorePath([X, Y, 0], ParentList, Covid0Path),
+    concatenate(Covid0Path, [[X, Y]], Covid0Path1),
+    recursiveRestorePath([X, Y, 1], ParentList, Covid1Path),
+    concatenate(Covid1Path, [[X, Y]], Covid1Path1),
+    length(Covid1Path1, N1), length(Covid0Path1, N2),
+    (
+        N1 < N2,
+        Path = Covid1Path1;
+        N1 >= N2,
+        Path = Covid1Path1
+    ).
+
+main :-
+    computeParentList(ParentList),
+    restorePath(ParentList, X),
+    write(X).
