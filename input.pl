@@ -8,12 +8,12 @@
 
 
 
-covid([2, 5]).
-covid([4, 1]).
-doctor([6, 6]).
-home([4, 5]).
-mask([2, 1]).
-restrictions(5).
+% covid([2, 5]).
+% covid([4, 1]).
+% doctor([6, 6]).
+% home([4, 5]).
+% mask([2, 1]).
+% restrictions(5).
 
 % corresponds to
 % [I C I H -]
@@ -74,12 +74,12 @@ restrictions(5).
 
 % uncomment these 6 lines for usage, and comment other inputs
 
-% covid([7, 5]).
-% covid([7, 9]).
-% doctor([1, 9]).
-% home([9, 9]).
-% mask([2, 9]).
-% restrictions(9).
+covid([7, 5]).
+covid([7, 9]).
+doctor([1, 9]).
+home([9, 9]).
+mask([2, 9]).
+restrictions(9).
 
 % corresponds to
 % [- - - - - I C I H]       [- - - - - - - - P]

@@ -179,7 +179,16 @@ restorePath(ParentList, Path) :-
         Path = Covid0Path1
     ).
 
-main :-
+astar_main :-
+    get_time(T1),    
     computeParentList(ParentList),
     restorePath(ParentList, X),
-    write(X).
+    get_time(T2),
+    write("Path: "),
+    write(X),
+    write("\nPath length: "),
+    length(X, N),
+    write(N),
+    write("\nTime spend: "),
+    T3 is T2 - T1,
+    write(T3).  

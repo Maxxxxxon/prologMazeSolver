@@ -48,6 +48,15 @@ find_shortest_way(Path) :-
     find_shortest_list(L, Path2),
     concatenate([[1, 1]], Path2, Path).
 
-main :-
+backtracking_main :-
+    get_time(T1),    
     find_shortest_way(Path),
-    write(Path).
+    get_time(T2),
+    write("Path: "),
+    write(Path),
+    write("\nPath length: "),
+    length(Path, N),
+    write(N),
+    write("\nTime spend: "),
+    T3 is T2 - T1,
+    write(T3).
